@@ -20,11 +20,16 @@ if (
     apply_filters("active_plugins", get_option("active_plugins"))
   )
 ) {
-  require "SyncStockingWidget.php";
+  require_once "SyncStockingWidget.php";
 
+  // Create stocking class
   $sync = new SyncStockingWidget();
 
-  $results = $sync->getCSV();
+  // Get the CSV file
+  $csv = $sync->getCSV();
 
-  var_dump($results);
+  // Loop through each row, check if SKU is in stock,
+  // if so and SKU doesnt equal what spreadsheet has then update it
+
+  var_dump($csv->getCellByColumnAndRow(2, 5)->getValue());
 }
