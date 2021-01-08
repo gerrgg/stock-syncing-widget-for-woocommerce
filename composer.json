@@ -1,5 +1,9 @@
 {
     "require": {
-        "phpoffice/phpspreadsheet": "^1.16"
+        "phpoffice/phpspreadsheet": "^1.16",
+        "vlucas/phpdotenv": "^5.2"
+    },
+    "require-dev": {
+        "pestphp/pest": "^1.0"
     }
 }

@@ -14,6 +14,8 @@
  * Domain Path:       /languages
  **/
 
+require "vendor/autoload.php";
+
 if (
   in_array(
     "woocommerce/woocommerce.php",
@@ -24,12 +26,4 @@ if (
 
   // Create stocking class
   $sync = new SyncStockingWidget();
-
-  // Get the CSV file
-  $csv = $sync->getCSV();
-
-  // Loop through each row, check if SKU is in stock,
-  // if so and SKU doesnt equal what spreadsheet has then update it
-
-  var_dump($csv->getCellByColumnAndRow(2, 5)->getValue());
 }

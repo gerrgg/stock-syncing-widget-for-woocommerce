@@ -1,45 +1,101 @@
 <?php
 
-require "vendor/autoload.php";
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 class SyncStockingWidget
 {
-  private $url = "https://b2bwork.hellyhansen.com/api/catalogs/5e2443bcd35aa327ff000001.csv?csv[customer]=9060309&csv[data]=availability&csv[date]=2021-01-05/api/catalogs/5e2443bcd35aa327ff000001.csv?csv[customer]=9060309&csv[data]=availability&csv[date]=2021-01-05";
-  private $token = "remember_user_token=BAhbB1sGSSIdNWZmMzcwNjEzZDgzYmYwMDAxMDExNTFiBjoGRVRJIhlDZHp5emh0dWZ3ekRod3BvRXpBbQY7AFQ%3D--8ae2a1ae74e773cc3e98d261aec5df1dee1180e5";
+  private $url = "";
+  private $token = "";
   private $file_location = __DIR__ . "/data.xlsx";
+
+  private $sku_column = 9;
+  private $stock_column = 13;
 
   public $spreadsheet = null;
 
-  public function getCSV()
+  function __construct()
   {
-    /**
-     * Gets spreadsheet from remote server and saves to local directory
-     */
-    if ($this->dataIsOld()) {
-      $xlsx = $this->getRemoteFile();
-      $this->saveToFile($xlsx);
+    $this->url = $_ENV["API_URL"];
+    $this->token = $_ENV["API_KEY"];
+  }
+
+  /**
+   * Gets spreadsheet from remote server and saves to local directory
+   * @return PhpSpreadsheet
+   */
+  public function get_CSV()
+  {
+    if ($this->data_is_old()) {
+      $xlsx = $this->get_remote_file();
+      $this->save_to_file($xlsx);
     } else {
-      $this->setCSV($this->file_location);
+      $this->set_CSV($this->file_location);
     }
 
     return $this->spreadsheet;
   }
 
-  private function setCSV($location)
+  /**
+   * Returns a cell's value by coordinates
+   * @param int $x - the row number of the cell
+   * @param int $y - the column number of the cell
+   * @return string|int
+   */
+  public function get_cell($x, $y)
   {
+    return $this->spreadsheet->getCellByColumnAndRow($y, $x)->getValue();
+  }
+
+  /**
+   * Sets the spreadsheet file location and returns spreadsheet
+   * @param string $location - the path to the spreadsheet file
+   * @return PhpSpreadsheet
+   */
+  public function set_CSV($location)
+  {
+    $this->file_location = $location;
+
     $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(
       $this->file_location
     );
 
     $this->spreadsheet = $spreadsheet->getActiveSheet();
+
+    return $this->spreadsheet;
   }
 
-  private function dataIsOld()
+  /**
+   * Sets the column number of where SKUS are located in the spreadsheet
+   * @param int $column
+   */
+  public function set_sku_column($column)
+  {
+    $this->sku_column = $column;
+  }
+
+  /**
+   * Sets the column number of where STOCK is located in the spreadsheet
+   * @param int $column
+   */
+  public function set_stock_column($column)
+  {
+    $this->stock_column = $column;
+  }
+
+  /**
+   * Checks if the file located at $this->file_location  is older than 1 day
+   * @return bool
+   */
+  public function data_is_old()
   {
     return time() - filemtime($this->file_location) > 60 * 60 * 24;
   }
 
-  private function getRemoteFile()
+  /**
+   * Uses CURL to get remote file and pass cookie token
+   */
+  private function get_remote_file()
   {
     $curl = curl_init();
 
@@ -53,12 +109,18 @@ class SyncStockingWidget
     return $result;
   }
 
-  public function saveToFile($file)
+  private function save_to_file($file)
   {
     $fp = fopen($this->file_location, "w");
     fwrite($fp, $file);
     fclose($fp);
+  }
 
-    $this->setCSV($this->file_location);
+  public function get_remote_product_from_row($row)
+  {
+    return [
+      "sku" => $this->get_cell($row, $this->sku_column),
+      "stock" => $this->get_cell($row, $this->stock_column),
+    ];
   }
 }
