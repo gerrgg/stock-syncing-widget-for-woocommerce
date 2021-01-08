@@ -109,6 +109,10 @@ class SyncStockingWidget
     return $result;
   }
 
+  /**
+   * Saves passed file to set file location
+   * @param PhpSpreadsheet
+   */
   private function save_to_file($file)
   {
     $fp = fopen($this->file_location, "w");
@@ -116,11 +120,54 @@ class SyncStockingWidget
     fclose($fp);
   }
 
+  private function get_path_to_wp_config()
+  {
+    $base = implode("/", array_slice(explode("/", __DIR__), 0, 7));
+    return $base + "/wp-config.php";
+  }
+
+  /**
+   * Extracts the SKU and stock from row number
+   * @param int $row
+   * @return array [string, string]
+   */
   public function get_remote_product_from_row($row)
   {
     return [
       "sku" => $this->get_cell($row, $this->sku_column),
       "stock" => $this->get_cell($row, $this->stock_column),
     ];
+  }
+
+  /**
+   * Returns total number of rows in spreadsheet
+   * @return int
+   */
+  public function get_row_count()
+  {
+    return $this->spreadsheet->getHighestRow();
+  }
+
+  /**
+   * Returns product ID if sku is found in database
+   * @param string $sku
+   * @param int $product_id
+   */
+
+  public function get_product_id_by_sku($sku = false)
+  {
+    if (!$sku) {
+      return null;
+    }
+
+    $wpdb = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    $product_id = $wpdb->get_var(
+      $wpdb->prepare(
+        "SELECT post_id FROM $wpdb->postmeta WHERE meta_key='_sku' AND meta_value='%s' LIMIT 1",
+        $sku
+      )
+    );
+    return $product_id;
   }
 }
